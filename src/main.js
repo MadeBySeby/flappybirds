@@ -1,5 +1,14 @@
-import { Application, Assets, Sprite, TilingSprite, Text } from "pixi.js";
+import {
+  Application,
+  Assets,
+  Sprite,
+  TilingSprite,
+  Text,
+  Container,
+} from "pixi.js";
 import { gsap } from "gsap";
+import { sound } from "@pixi/sound";
+
 (async () => {
   // Create a new application
   const app = new Application();
@@ -27,9 +36,7 @@ import { gsap } from "gsap";
       src: "/assets/base.png",
     },
   ]);
-  const bird = Sprite.from("bird");
-  const pipeGreen = Sprite.from("pipe-green");
-  const reversePipeGreen = Sprite.from("pipe-green");
+
   const keyMap = {
     KeyW: "up",
     ArrowUp: "up",
@@ -39,9 +46,13 @@ import { gsap } from "gsap";
   };
   window.addEventListener("keydown", (event) => keydownHandler(event));
   window.addEventListener("keyup", (event) => keyupHandler(event));
+
+  sound.add("jump", "/assets/Everything/sfx_wing.wav"); // or .mp3
+
   function keydownHandler(e) {
     const key = keyMap[e.code];
     if (!key) return;
+    sound.play("jump");
     keys[key].pressed = true;
   }
   function keyupHandler(e) {
@@ -49,38 +60,27 @@ import { gsap } from "gsap";
     if (!key) return;
     keys[key].pressed = false;
   }
+  const world = new Container();
+  const bird = Sprite.from("bird");
+
   bird.x = 0;
   bird.y = app.screen.height / 2;
-  // let birdAnim = gsap.to(bird, {
-  //   x: bird.x + 15,
-  //   y: bird.y - 40,
-  //   // rotation: 20,
-  //   fill: "yellow",
-  //   duration: 0.3,
-  // });
-  // let birdDown = gsap.to(bird, {
-  //   x: bird.x + 5,
-  //   y: bird.y + 40,
-  //   duration: 1, // slower falling
-  //   paused: true,
-  // });
-  // birdAnim.pause();
-  // birdDown.pause();
   const baseTexture = Assets.get("base");
   const base = new TilingSprite({
     texture: baseTexture,
-    width: app.screen.width,
+    width: app.screen.width * 3,
     height: baseTexture.height,
   });
+
   base.y = app.screen.height - base.height;
   let score = 0;
-  pipeGreen.anchor.set(0.5);
-  reversePipeGreen.anchor.set(0.5);
-  pipeGreen.rotation = Math.PI * 1;
-  reversePipeGreen.x = 500;
-  reversePipeGreen.y = app.screen.height - base.height;
-  pipeGreen.x = 500;
-  pipeGreen.y = 0;
+  // pipeGreen.anchor.set(0.5);
+  // reversePipeGreen.anchor.set(0.5);
+  // pipeGreen.rotation = Math.PI * 1;
+  // reversePipeGreen.x = 500;
+  // reversePipeGreen.y = app.screen.height - base.height;
+  // pipeGreen.x = 500;
+  // pipeGreen.y = 0;
   const counter = new Text({
     text: score,
     style: {
@@ -90,17 +90,44 @@ import { gsap } from "gsap";
       align: "center",
     },
   });
-  app.stage.addChild(reversePipeGreen);
+  world.addChild(base);
+  // app.stage.awwwddChild(reversePipeGreen);
+  // app.stage.addChild(base);
+  // app.stage.addChild(pipeGreen);
+  app.stage.addChild(world);
   app.stage.addChild(counter);
-  app.stage.addChild(base);
-  app.stage.addChild(pipeGreen);
   app.stage.addChild(bird);
+  const pipeGap = 150;
+  const pipeSpacing = 300;
+  const pipeSpeed = 2;
+  const pipes = [];
+  function createPipePair(x) {
+    const top = Sprite.from("pipe-green");
+    const bottom = Sprite.from("pipe-green");
 
+    const offset = Math.random() * x + 100; // Random vertical gap start
+    top.anchor.set(0.5, 1);
+    bottom.anchor.set(0.5, 0);
+
+    top.rotation = Math.PI;
+    top.x = offset;
+    bottom.x = offset;
+
+    top.y = 0;
+    (bottom.y = app.screen.height - base.height - top.height),
+      world.addChild(top, bottom);
+    pipes.push({ top, bottom });
+  }
+
+  for (let i = 0; i < 10; i++) {
+    createPipePair(app.screen.width + i * pipeSpacing);
+  }
   let fallingSpeed = 0.5;
   let jump = -8;
   let velocity = 0;
-  const baseScrollSpeed = 2;
   // let floatTime = 0;
+  let gameDistance = 0;
+  const scrollSpeed = 2;
   app.ticker.add((time) => {
     if (keys.up.pressed) {
       velocity = jump;
@@ -121,6 +148,25 @@ import { gsap } from "gsap";
       bird.y = app.screen.height - base.height - bird.height;
       velocity = 0;
     }
-    base.tilePosition.x -= baseScrollSpeed;
+
+    world.x -= 2;
+    gameDistance += scrollSpeed;
+    base.tilePosition.x = gameDistance;
   });
 })();
+
+// let birdAnim = gsap.to(bird, {
+//   x: bird.x + 15,
+//   y: bird.y - 40,
+//   // rotation: 20,
+//   fill: "yellow",
+//   duration: 0.3,
+// });
+// let birdDown = gsap.to(bird, {
+//   x: bird.x + 5,
+//   y: bird.y + 40,
+//   duration: 1, // slower falling
+//   paused: true,
+// });
+// birdAnim.pause();
+// birdDown.pause();
