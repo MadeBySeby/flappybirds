@@ -67,6 +67,7 @@ import { sound } from "@pixi/sound";
 
   bird.x = 0;
   bird.y = app.screen.height / 2;
+  world.addChild(bird);
   const baseSample = Sprite.from("base");
   const baseWidth = baseSample.width;
   const bases = [];
@@ -119,7 +120,6 @@ import { sound } from "@pixi/sound";
   // app.stage.addChild(pipeGreen);
   app.stage.addChild(world);
   app.stage.addChild(counter);
-  app.stage.addChild(bird);
   const pipeGap = 150;
   const pipeSpacing = 300;
   const pipeSpeed = 2;
@@ -130,12 +130,11 @@ import { sound } from "@pixi/sound";
 
     const offset = Math.random() * x + 100; // Random vertical gap start
     top.anchor.set(0.5, 1);
-    bottom.anchor.set(0.5, 0);
-
+    // bottom.anchor.set();
     top.rotation = Math.PI;
     top.x = offset;
     bottom.x = offset;
-
+    // bottom.y = app.screen.height - baseSample.height - top.height - pipeGap;
     top.y = 0;
     (bottom.y = app.screen.height - baseSample.height - top.height),
       world.addChild(top, bottom);
@@ -146,11 +145,33 @@ import { sound } from "@pixi/sound";
     createPipePair(app.screen.width + i * pipeSpacing);
   }
   let fallingSpeed = 0.5;
-  let jump = -8;
+  let jump = -5;
   let velocity = 0;
   // let floatTime = 0;
   let gameDistance = 0;
   const scrollSpeed = 2;
+  function gameOver() {
+    // Reset bird position and velocity
+    bird.x = 0;
+    bird.y = app.screen.height / 2;
+    velocity = 0;
+
+    // Reset pipes
+    pipes.forEach((pipe, i) => {
+      const offset = app.screen.width + i * pipeSpacing;
+      pipe.top.x = offset;
+      pipe.bottom.x = offset;
+      pipe.top.y = 0;
+      pipe.bottom.y = app.screen.height - baseSample.height - pipe.top.height;
+      pipe.passed = false;
+    });
+
+    world.x = 0;
+    score = 0;
+    counter.text = score;
+
+    sound.play("die");
+  }
   app.ticker.add((time) => {
     if (keys.up.pressed) {
       velocity = jump;
@@ -171,7 +192,54 @@ import { sound } from "@pixi/sound";
       bird.y = app.screen.height - baseSample.height - bird.height;
       velocity = 0;
     }
-    pipes.forEach((pipe) => {});
+    pipes.forEach((pipe) => {
+      // Collision detection between bird and pipes
+      const birdLeft = bird.x;
+      const birdRight = bird.x + bird.width;
+      const birdTop = bird.y;
+      const birdBottom = bird.y + bird.height;
+
+      // Top pipe
+      const topPipeLeft = pipe.top.x - pipe.top.width / 2;
+      const topPipeRight = pipe.top.x + pipe.top.width / 2;
+      const topPipeBottom = pipe.top.y + pipe.top.height;
+
+      // Bottom pipe
+      const bottomPipeLeft = pipe.bottom.x - pipe.bottom.width / 2;
+      const bottomPipeRight = pipe.bottom.x + pipe.bottom.width / 2;
+      const bottomPipeTop = pipe.bottom.y;
+      // console.log(
+      //   birdRight,
+      //   topPipeLeft,
+      //   bottomPipeLeft,
+      // );
+      const logic = birdRight > topPipeLeft && birdBottom > bottomPipeLeft;
+      // console.log(logic);
+      // Check collision with top pipe
+      const collideTop =
+        birdRight > topPipeLeft &&
+        birdLeft < topPipeRight &&
+        birdTop < topPipeBottom;
+      // Check collision with bottom pipe
+      const collideBottom =
+        birdRight > bottomPipeLeft &&
+        birdLeft < bottomPipeRight &&
+        birdBottom > bottomPipeTop;
+
+      if (collideTop || collideBottom) {
+        // console.log("s");
+        alert("Game Over! You hit a pipe.");
+        gameOver();
+        sound.play("hit");
+        // Optionally, handle game over logic here
+      }
+      console.log(score);
+      if (!pipe.passed && bird.x > pipe.top.x + pipe.top.width / 2) {
+        pipe.passed = true;
+        score++;
+        counter.text = score;
+      }
+    });
     bases.forEach((base) => {
       if (base.getGlobalPosition().x <= -base.width) {
         // ეს gptm მითრა დიდად არვიცი რაარი
@@ -181,7 +249,7 @@ import { sound } from "@pixi/sound";
         base.x = rightmostX - world.x + baseWidth;
       }
     });
-
+    bird.x += 2;
     world.x -= 2;
     gameDistance += scrollSpeed;
     // base.tilePosition.x = gameDistance;
