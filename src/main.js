@@ -140,7 +140,10 @@ import { sound } from "@pixi/sound";
   function createPipePair(x) {
     const top = Sprite.from("pipe-green");
     const bottom = Sprite.from("pipe-green");
-
+    // Make pipes responsive: set their height based on screen size
+    const pipeHeight = (app.screen.height - baseSample.height - pipeGap) / 2;
+    top.height = pipeHeight;
+    bottom.height = pipeHeight;
     const offset = Math.random() * x + 300; // Random vertical gap start
     top.anchor.set(0.5, 1);
     // bottom.anchor.set();
