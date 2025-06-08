@@ -6,7 +6,6 @@ import {
   Text,
   Container,
 } from "pixi.js";
-import { gsap } from "gsap";
 import { sound } from "@pixi/sound";
 
 (async () => {
@@ -45,19 +44,31 @@ import { sound } from "@pixi/sound";
     up: { pressed: false },
   };
   window.addEventListener("keydown", (event) => keydownHandler(event));
+  window.addEventListener("touchstart", (event) => keydownHandler(event));
   window.addEventListener("keyup", (event) => keyupHandler(event));
+  window.addEventListener("touchend", (event) => keyupHandler(event));
 
   sound.add("jump", "/assets/Everything/sfx_wing.wav"); // or .mp3
   sound.add("hit", "/assets/Everything/sfx_hit.wav"); // or .mp3
   sound.add("die", "/assets/Everything/sfx_die.wav"); // or .mp3
 
   function keydownHandler(e) {
+    // console.log(e);
+    if (e.type === "touchstart") {
+      keys.up.pressed = true;
+      sound.play("jump");
+    }
     const key = keyMap[e.code];
     if (!key) return;
-    sound.play("die");
+    sound.play("jump");
     keys[key].pressed = true;
   }
   function keyupHandler(e) {
+    console.log(e);
+    if (e.type === "touchend") {
+      keys.up.pressed = false;
+      return;
+    }
     const key = keyMap[e.code];
     if (!key) return;
     keys[key].pressed = false;
@@ -72,7 +83,12 @@ import { sound } from "@pixi/sound";
   const baseWidth = baseSample.width;
   const bases = [];
   const numOfBases = Math.ceil(app.screen.width / baseSample.width) + 2;
-  console.log(numOfBases);
+  const pipeGap = 150;
+  const pipeSpacing = 300;
+  const pipeSpeed = 2;
+  const pipes = [];
+  const numOfPipes = Math.ceil(app.screen.width / pipeSpacing) + 2;
+  // console.log(numOfBases);
   for (let i = 0; i < numOfBases; i++) {
     const base = Sprite.from("base");
     base.x = i * baseWidth;
@@ -120,18 +136,21 @@ import { sound } from "@pixi/sound";
   // app.stage.addChild(pipeGreen);
   app.stage.addChild(world);
   app.stage.addChild(counter);
-  const pipeGap = 150;
-  const pipeSpacing = 300;
-  const pipeSpeed = 2;
-  const pipes = [];
+
   function createPipePair(x) {
     const top = Sprite.from("pipe-green");
     const bottom = Sprite.from("pipe-green");
 
-    const offset = Math.random() * x + 100; // Random vertical gap start
+    const offset = Math.random() * x + 300; // Random vertical gap start
     top.anchor.set(0.5, 1);
     // bottom.anchor.set();
     top.rotation = Math.PI;
+    const maxOffset = top.width;
+    const centerY = (app.screen.height - baseSample.height) / 2;
+    const gapOffset = (Math.random() - 0.1) * 2 * maxOffset;
+
+    top.y = centerY + gapOffset - pipeGap / 2;
+    bottom.y = centerY + gapOffset + pipeGap / 2;
     top.x = offset;
     bottom.x = offset;
     // bottom.y = app.screen.height - baseSample.height - top.height - pipeGap;
@@ -144,6 +163,7 @@ import { sound } from "@pixi/sound";
   for (let i = 0; i < 10; i++) {
     createPipePair(app.screen.width + i * pipeSpacing);
   }
+
   let fallingSpeed = 0.5;
   let jump = -5;
   let velocity = 0;
@@ -227,13 +247,10 @@ import { sound } from "@pixi/sound";
         birdBottom > bottomPipeTop;
 
       if (collideTop || collideBottom) {
-        // console.log("s");
         alert("Game Over! You hit a pipe.");
-        gameOver();
         sound.play("hit");
-        // Optionally, handle game over logic here
+        gameOver();
       }
-      console.log(score);
       if (!pipe.passed && bird.x > pipe.top.x + pipe.top.width / 2) {
         pipe.passed = true;
         score++;
