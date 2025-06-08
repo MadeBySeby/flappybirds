@@ -48,11 +48,13 @@ import { sound } from "@pixi/sound";
   window.addEventListener("keyup", (event) => keyupHandler(event));
 
   sound.add("jump", "/assets/Everything/sfx_wing.wav"); // or .mp3
+  sound.add("hit", "/assets/Everything/sfx_hit.wav"); // or .mp3
+  sound.add("die", "/assets/Everything/sfx_die.wav"); // or .mp3
 
   function keydownHandler(e) {
     const key = keyMap[e.code];
     if (!key) return;
-    sound.play("jump");
+    sound.play("die");
     keys[key].pressed = true;
   }
   function keyupHandler(e) {
@@ -65,14 +67,35 @@ import { sound } from "@pixi/sound";
 
   bird.x = 0;
   bird.y = app.screen.height / 2;
-  const baseTexture = Assets.get("base");
-  const base = new TilingSprite({
-    texture: baseTexture,
-    width: app.screen.width * 3,
-    height: baseTexture.height,
-  });
+  const baseSample = Sprite.from("base");
+  const baseWidth = baseSample.width;
+  const bases = [];
+  const numOfBases = Math.ceil(app.screen.width / baseSample.width) + 2;
+  console.log(numOfBases);
+  for (let i = 0; i < numOfBases; i++) {
+    const base = Sprite.from("base");
+    base.x = i * baseWidth;
+    base.y = app.screen.height - base.height;
+    world.addChild(base);
+    bases.push(base);
+  }
+  // bases.forEach((base, i) => {
+  //   base.y = app.screen.height - base.height;
+  //   base.x += i * basePadding;
+  //   world.addChild(base);
+  //   console.log(base.x, -base.width, app.screen.height);
+  //   if (base.x <= -(base.width + 1)) {
+  //     plank.x += plankCount * base.width + 1 * 1.5;
+  //   }
+  // });
+  // const baseTexture = Assets.get("base");
+  // const base = new TilingSprite({
+  //   texture: baseTexture,
+  //   width: app.screen.width * 3,
+  //   height: baseTexture.height,
+  // });
 
-  base.y = app.screen.height - base.height;
+  // base.y = app.screen.height - base.height;
   let score = 0;
   // pipeGreen.anchor.set(0.5);
   // reversePipeGreen.anchor.set(0.5);
@@ -90,7 +113,7 @@ import { sound } from "@pixi/sound";
       align: "center",
     },
   });
-  world.addChild(base);
+  // world.addChild(base);
   // app.stage.awwwddChild(reversePipeGreen);
   // app.stage.addChild(base);
   // app.stage.addChild(pipeGreen);
@@ -114,9 +137,9 @@ import { sound } from "@pixi/sound";
     bottom.x = offset;
 
     top.y = 0;
-    (bottom.y = app.screen.height - base.height - top.height),
+    (bottom.y = app.screen.height - baseSample.height - top.height),
       world.addChild(top, bottom);
-    pipes.push({ top, bottom });
+    pipes.push({ top, bottom, passed: false });
   }
 
   for (let i = 0; i < 10; i++) {
@@ -144,14 +167,24 @@ import { sound } from "@pixi/sound";
       velocity = 0;
     }
 
-    if (bird.y > app.screen.height - base.height - bird.height) {
-      bird.y = app.screen.height - base.height - bird.height;
+    if (bird.y > app.screen.height - baseSample.height - bird.height) {
+      bird.y = app.screen.height - baseSample.height - bird.height;
       velocity = 0;
     }
+    pipes.forEach((pipe) => {});
+    bases.forEach((base) => {
+      if (base.getGlobalPosition().x <= -base.width) {
+        // ეს gptm მითრა დიდად არვიცი რაარი
+        const rightmostX = Math.max(
+          ...bases.map((b) => b.getGlobalPosition().x)
+        );
+        base.x = rightmostX - world.x + baseWidth;
+      }
+    });
 
     world.x -= 2;
     gameDistance += scrollSpeed;
-    base.tilePosition.x = gameDistance;
+    // base.tilePosition.x = gameDistance;
   });
 })();
 
